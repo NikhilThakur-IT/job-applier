@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Job Applier</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #333; }
+    .container { max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+    h1 { margin-bottom: 0.5rem; }
+    .subtitle { color: #666; margin-bottom: 2rem; }
+    .card { background: #fff; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .card h2 { margin-bottom: 1rem; font-size: 1.1rem; }
+    label { display: block; font-weight: 600; margin-bottom: 0.5rem; }
+    input[type="file"], input[type="text"] { width: 100%; padding: 0.6rem; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem; }
+    input[type="text"] { margin-bottom: 0.5rem; }
+    .hint { font-size: 0.85rem; color: #888; }
+    button { background: #2563eb; color: #fff; border: none; padding: 0.75rem 2rem; border-radius: 6px; font-size: 1rem; cursor: pointer; margin-top: 1rem; }
+    button:hover { background: #1d4ed8; }
+    button:disabled { background: #94a3b8; cursor: not-allowed; }
+    .hidden { display: none; }
+    #results .rating { font-size: 2.5rem; font-weight: 700; text-align: center; margin: 1rem 0; }
+    #results .rating.high { color: #16a34a; }
+    #results .rating.mid { color: #ca8a04; }
+    #results .rating.low { color: #dc2626; }
+    .explanation { margin-bottom: 1.5rem; line-height: 1.6; }
+    .resume-output { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 1rem; white-space: pre-wrap; font-family: inherit; line-height: 1.6; max-height: 500px; overflow-y: auto; }
+    .actions { display: flex; gap: 0.75rem; margin-top: 1rem; }
+    .actions button { flex: 1; }
+    .spinner { display: inline-block; width: 1rem; height: 1rem; border: 2px solid #fff; border-top-color: transparent; border-radius: 50%; animation: spin 0.6s linear infinite; margin-right: 0.5rem; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .upload-status { margin-top: 0.5rem; font-size: 0.9rem; color: #16a34a; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Job Applier</h1>
+    <p class="subtitle">Tailor your resume to any job posting using only your real experience.</p>
+
+    <div class="card">
+      <h2>1. Upload Your Resume</h2>
+      <label for="resume">PDF or Word document</label>
+      <input type="file" id="resume" accept=".pdf,.doc,.docx">
+      <div id="uploadStatus" class="upload-status hidden"></div>
+    </div>
+
+    <div class="card">
+      <h2>2. Job Posting URL</h2>
+      <label for="jobUrl">Paste the link to the job listing</label>
+      <input type="text" id="jobUrl" placeholder="https://...">
+      <p class="hint">Works best with direct job posting pages (e.g. Seek, LinkedIn, company careers pages).</p>
+    </div>
+
+    <button id="analyseBtn" onclick="analyse()">Analyse &amp; Tailor</button>
+
+    <div id="loading" class="card hidden">
+      <p><span class="spinner"></span>Analysing your resume against the job posting...</p>
+    </div>
+
+    <div id="results" class="hidden">
+      <div class="card">
+        <h2>Compatibility Rating</h2>
+        <div id="ratingValue" class="rating"></div>
+        <div id="explanation" class="explanation"></div>
+      </div>
+
+      <div class="card">
+        <h2>Tailored Resume</h2>
+        <div id="tailoredResume" class="resume-output"></div>
+        <div class="actions">
+          <button onclick="copyResume()">Copy to Clipboard</button>
+          <button onclick="downloadDocx()">Download as Word</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="error" class="card hidden" style="border-left: 4px solid #dc2626;">
+      <p id="errorMsg" style="color: #dc2626;"></p>
+    </div>
+  </div>
+
+  <script>
+    let lastResult = null;
+
+    async function analyse() {
+      const fileInput = document.getElementById('resume');
+      const jobUrl = document.getElementById('jobUrl').value.trim();
+      const btn = document.getElementById('analyseBtn');
+
+      if (!fileInput.files.length) { showError('Please upload your resume first.'); return; }
+      if (!jobUrl) { showError('Please enter a job posting URL.'); return; }
+
+      hideError();
+      document.getElementById('results').classList.add('hidden');
+      document.getElementById('loading').classList.remove('hidden');
+      btn.disabled = true;
+
+      const formData = new FormData();
+      formData.append('resume', fileInput.files[0]);
+      formData.append('job_url', jobUrl);
+
+      try {
+        const resp = await fetch('/api/analyse', { method: 'POST', body: formData });
+        const data = await resp.json();
+
+        if (!resp.ok) { showError(data.detail || 'Something went wrong.'); return; }
+
+        lastResult = data;
+        const ratingEl = document.getElementById('ratingValue');
+        ratingEl.textContent = data.rating + ' / 10';
+        ratingEl.className = 'rating ' + (data.rating >= 7 ? 'high' : data.rating >= 4 ? 'mid' : 'low');
+
+        document.getElementById('explanation').textContent = data.explanation;
+        document.getElementById('tailoredResume').textContent = data.tailored_resume;
+        document.getElementById('results').classList.remove('hidden');
+      } catch (e) {
+        showError('Failed to connect to the server: ' + e.message);
+      } finally {
+        document.getElementById('loading').classList.add('hidden');
+        btn.disabled = false;
+      }
+    }
+
+    function copyResume() {
+      if (!lastResult) return;
+      navigator.clipboard.writeText(lastResult.tailored_resume).then(() => {
+        const btn = event.target;
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = 'Copy to Clipboard', 2000);
+      });
+    }
+
+    async function downloadDocx() {
+      if (!lastResult) return;
+      const resp = await fetch('/api/download-docx', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: lastResult.tailored_resume })
+      });
+      const blob = await resp.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'tailored_resume.docx';
+      a.click();
+    }
+
+    function showError(msg) {
+      document.getElementById('errorMsg').textContent = msg;
+      document.getElementById('error').classList.remove('hidden');
+    }
+    function hideError() {
+      document.getElementById('error').classList.add('hidden');
+    }
+
+    // Show filename after upload
+    document.getElementById('resume').addEventListener('change', (e) => {
+      const status = document.getElementById('uploadStatus');
+      if (e.target.files.length) {
+        status.textContent = 'Uploaded: ' + e.target.files[0].name;
+        status.classList.remove('hidden');
+      }
+    });
+  </script>
+</body>
+</html>
