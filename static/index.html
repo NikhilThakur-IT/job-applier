@@ -7,19 +7,36 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #333; }
-    .container { max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+    .container { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
     h1 { margin-bottom: 0.5rem; }
-    .subtitle { color: #666; margin-bottom: 2rem; }
+    .subtitle { color: #666; margin-bottom: 1.5rem; }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 0; margin-bottom: 1.5rem; border-bottom: 2px solid #e2e8f0; }
+    .tab { padding: 0.75rem 1.5rem; cursor: pointer; font-weight: 600; color: #666; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
+    .tab:hover { color: #333; }
+    .tab.active { color: #2563eb; border-bottom-color: #2563eb; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
     .card { background: #fff; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     .card h2 { margin-bottom: 1rem; font-size: 1.1rem; }
     label { display: block; font-weight: 600; margin-bottom: 0.5rem; }
     input[type="file"], input[type="text"] { width: 100%; padding: 0.6rem; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem; }
     input[type="text"] { margin-bottom: 0.5rem; }
     .hint { font-size: 0.85rem; color: #888; }
+    .row { display: flex; gap: 1rem; }
+    .row > * { flex: 1; }
     button { background: #2563eb; color: #fff; border: none; padding: 0.75rem 2rem; border-radius: 6px; font-size: 1rem; cursor: pointer; margin-top: 1rem; }
     button:hover { background: #1d4ed8; }
     button:disabled { background: #94a3b8; cursor: not-allowed; }
-    .hidden { display: none; }
+    .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.85rem; margin-top: 0; }
+    .btn-danger { background: #dc2626; }
+    .btn-danger:hover { background: #b91c1c; }
+    .btn-secondary { background: #64748b; }
+    .btn-secondary:hover { background: #475569; }
+    .hidden { display: none !important; }
+
     #results .rating { font-size: 2.5rem; font-weight: 700; text-align: center; margin: 1rem 0; }
     #results .rating.high { color: #16a34a; }
     #results .rating.mid { color: #ca8a04; }
@@ -31,6 +48,38 @@
     .spinner { display: inline-block; width: 1rem; height: 1rem; border: 2px solid #fff; border-top-color: transparent; border-radius: 50%; animation: spin 0.6s linear infinite; margin-right: 0.5rem; vertical-align: middle; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .upload-status { margin-top: 0.5rem; font-size: 0.9rem; color: #16a34a; }
+
+    /* Dashboard styles */
+    .stats-row { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .stat-card { background: #fff; border-radius: 8px; padding: 1rem 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex: 1; min-width: 120px; text-align: center; }
+    .stat-card .num { font-size: 2rem; font-weight: 700; }
+    .stat-card .lbl { font-size: 0.85rem; color: #666; margin-top: 0.25rem; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #e2e8f0; }
+    th { font-weight: 600; font-size: 0.85rem; color: #666; text-transform: uppercase; letter-spacing: 0.05em; }
+    td { font-size: 0.95rem; }
+    tr:hover { background: #f8fafc; }
+
+    .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.8rem; font-weight: 600; }
+    .badge-applied { background: #dbeafe; color: #1d4ed8; }
+    .badge-heard-back { background: #dcfce7; color: #16a34a; }
+    .badge-interview { background: #fef3c7; color: #b45309; }
+    .badge-offered { background: #d1fae5; color: #065f46; }
+    .badge-rejected { background: #fee2e2; color: #dc2626; }
+    .badge-no-response { background: #f1f5f9; color: #64748b; }
+
+    select { padding: 0.35rem 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.85rem; }
+    .clickable { cursor: pointer; color: #2563eb; text-decoration: none; }
+    .clickable:hover { text-decoration: underline; }
+
+    /* Detail modal */
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 100; }
+    .modal { background: #fff; border-radius: 12px; padding: 2rem; max-width: 700px; width: 90%; max-height: 80vh; overflow-y: auto; }
+    .modal h2 { margin-bottom: 0.5rem; }
+    .modal .meta { color: #666; font-size: 0.9rem; margin-bottom: 1rem; }
+    .modal textarea { width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 6px; font-family: inherit; font-size: 0.95rem; resize: vertical; min-height: 60px; }
+    .empty-state { text-align: center; padding: 3rem 1rem; color: #999; }
   </style>
 </head>
 <body>
@@ -38,51 +87,95 @@
     <h1>Job Applier</h1>
     <p class="subtitle">Tailor your resume to any job posting using only your real experience.</p>
 
-    <div class="card">
-      <h2>1. Upload Your Resume</h2>
-      <label for="resume">PDF or Word document</label>
-      <input type="file" id="resume" accept=".pdf,.doc,.docx">
-      <div id="uploadStatus" class="upload-status hidden"></div>
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('analyse')">Analyse</div>
+      <div class="tab" onclick="switchTab('dashboard')">Dashboard</div>
     </div>
 
-    <div class="card">
-      <h2>2. Job Posting URL</h2>
-      <label for="jobUrl">Paste the link to the job listing</label>
-      <input type="text" id="jobUrl" placeholder="https://...">
-      <p class="hint">Works best with direct job posting pages (e.g. Seek, LinkedIn, company careers pages).</p>
-    </div>
-
-    <button id="analyseBtn" onclick="analyse()">Analyse &amp; Tailor</button>
-
-    <div id="loading" class="card hidden">
-      <p><span class="spinner"></span>Analysing your resume against the job posting...</p>
-    </div>
-
-    <div id="results" class="hidden">
+    <!-- ANALYSE TAB -->
+    <div id="tab-analyse" class="tab-content active">
       <div class="card">
-        <h2>Compatibility Rating</h2>
-        <div id="ratingValue" class="rating"></div>
-        <div id="explanation" class="explanation"></div>
+        <h2>1. Upload Your Resume</h2>
+        <label for="resume">PDF or Word document</label>
+        <input type="file" id="resume" accept=".pdf,.doc,.docx">
+        <div id="uploadStatus" class="upload-status hidden"></div>
       </div>
 
       <div class="card">
-        <h2>Tailored Resume</h2>
-        <div id="tailoredResume" class="resume-output"></div>
-        <div class="actions">
-          <button onclick="copyResume()">Copy to Clipboard</button>
-          <button onclick="downloadDocx()">Download as Word</button>
+        <h2>2. Job Details</h2>
+        <div class="row">
+          <div>
+            <label for="jobTitle">Job Title</label>
+            <input type="text" id="jobTitle" placeholder="e.g. Software Engineer">
+          </div>
+          <div>
+            <label for="company">Company</label>
+            <input type="text" id="company" placeholder="e.g. Atlassian">
+          </div>
+        </div>
+        <label for="jobUrl" style="margin-top: 0.75rem;">Job Posting URL</label>
+        <input type="text" id="jobUrl" placeholder="https://...">
+        <p class="hint">Works best with direct job posting pages (e.g. Seek, LinkedIn, company careers pages).</p>
+      </div>
+
+      <button id="analyseBtn" onclick="analyse()">Analyse &amp; Tailor</button>
+
+      <div id="loading" class="card hidden">
+        <p><span class="spinner"></span>Analysing your resume against the job posting...</p>
+      </div>
+
+      <div id="results" class="hidden">
+        <div class="card">
+          <h2>Compatibility Rating</h2>
+          <div id="ratingValue" class="rating"></div>
+          <div id="explanation" class="explanation"></div>
+        </div>
+
+        <div class="card">
+          <h2>Tailored Resume</h2>
+          <div id="tailoredResume" class="resume-output"></div>
+          <div class="actions">
+            <button onclick="copyResume()">Copy to Clipboard</button>
+            <button onclick="downloadDocx()">Download as Word</button>
+          </div>
         </div>
       </div>
+
+      <div id="error" class="card hidden" style="border-left: 4px solid #dc2626;">
+        <p id="errorMsg" style="color: #dc2626;"></p>
+      </div>
     </div>
 
-    <div id="error" class="card hidden" style="border-left: 4px solid #dc2626;">
-      <p id="errorMsg" style="color: #dc2626;"></p>
+    <!-- DASHBOARD TAB -->
+    <div id="tab-dashboard" class="tab-content">
+      <div id="statsRow" class="stats-row"></div>
+      <div class="card">
+        <h2>Applications</h2>
+        <div id="appTableWrap"></div>
+      </div>
     </div>
+  </div>
+
+  <!-- Detail modal -->
+  <div id="detailModal" class="modal-overlay hidden" onclick="if(event.target===this)closeModal()">
+    <div class="modal" id="modalContent"></div>
   </div>
 
   <script>
     let lastResult = null;
 
+    // --- Tab switching ---
+    function switchTab(name) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelector(`.tab-content#tab-${name}`).classList.add('active');
+      document.querySelectorAll('.tab').forEach(t => {
+        if (t.textContent.toLowerCase().includes(name)) t.classList.add('active');
+      });
+      if (name === 'dashboard') loadDashboard();
+    }
+
+    // --- Analyse ---
     async function analyse() {
       const fileInput = document.getElementById('resume');
       const jobUrl = document.getElementById('jobUrl').value.trim();
@@ -99,6 +192,8 @@
       const formData = new FormData();
       formData.append('resume', fileInput.files[0]);
       formData.append('job_url', jobUrl);
+      formData.append('job_title', document.getElementById('jobTitle').value.trim());
+      formData.append('company', document.getElementById('company').value.trim());
 
       try {
         const resp = await fetch('/api/analyse', { method: 'POST', body: formData });
@@ -153,7 +248,6 @@
       document.getElementById('error').classList.add('hidden');
     }
 
-    // Show filename after upload
     document.getElementById('resume').addEventListener('change', (e) => {
       const status = document.getElementById('uploadStatus');
       if (e.target.files.length) {
@@ -161,6 +255,123 @@
         status.classList.remove('hidden');
       }
     });
+
+    // --- Dashboard ---
+    const STATUSES = ['Applied', 'Heard Back', 'Interview', 'Offered', 'Rejected', 'No Response'];
+    const badgeClass = s => 'badge badge-' + s.toLowerCase().replace(/\s+/g, '-');
+
+    async function loadDashboard() {
+      const resp = await fetch('/api/applications');
+      const apps = await resp.json();
+      renderStats(apps);
+      renderTable(apps);
+    }
+
+    function renderStats(apps) {
+      const counts = {};
+      STATUSES.forEach(s => counts[s] = 0);
+      apps.forEach(a => { counts[a.status] = (counts[a.status] || 0) + 1; });
+
+      const colours = { 'Applied': '#2563eb', 'Heard Back': '#16a34a', 'Interview': '#b45309', 'Offered': '#065f46', 'Rejected': '#dc2626', 'No Response': '#64748b' };
+      let html = `<div class="stat-card"><div class="num">${apps.length}</div><div class="lbl">Total</div></div>`;
+      STATUSES.forEach(s => {
+        if (counts[s] > 0) {
+          html += `<div class="stat-card"><div class="num" style="color:${colours[s]}">${counts[s]}</div><div class="lbl">${s}</div></div>`;
+        }
+      });
+      document.getElementById('statsRow').innerHTML = html;
+    }
+
+    function renderTable(apps) {
+      if (!apps.length) {
+        document.getElementById('appTableWrap').innerHTML = '<div class="empty-state"><p>No applications yet. Analyse a job posting to get started.</p></div>';
+        return;
+      }
+
+      let html = `<table><thead><tr><th>Date</th><th>Job Title</th><th>Company</th><th>Rating</th><th>Status</th><th></th></tr></thead><tbody>`;
+      apps.forEach(a => {
+        const date = new Date(a.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+        html += `<tr>
+          <td>${date}</td>
+          <td><a class="clickable" onclick="viewDetail(${a.id})">${esc(a.job_title)}</a></td>
+          <td>${esc(a.company)}</td>
+          <td><strong>${a.rating}</strong>/10</td>
+          <td>
+            <select onchange="updateStatus(${a.id}, this.value)">
+              ${STATUSES.map(s => `<option value="${s}" ${s === a.status ? 'selected' : ''}>${s}</option>`).join('')}
+            </select>
+          </td>
+          <td><button class="btn-sm btn-danger" onclick="deleteApp(${a.id})">Remove</button></td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      document.getElementById('appTableWrap').innerHTML = html;
+    }
+
+    function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+    async function updateStatus(id, status) {
+      await fetch(`/api/applications/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+    }
+
+    async function deleteApp(id) {
+      if (!confirm('Remove this application?')) return;
+      await fetch(`/api/applications/${id}`, { method: 'DELETE' });
+      loadDashboard();
+    }
+
+    async function viewDetail(id) {
+      const resp = await fetch(`/api/applications/${id}`);
+      const a = await resp.json();
+      const date = new Date(a.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+
+      document.getElementById('modalContent').innerHTML = `
+        <h2>${esc(a.job_title)}</h2>
+        <p class="meta">${esc(a.company)} &middot; ${date} &middot; <a href="${esc(a.job_url)}" target="_blank" rel="noopener">View posting</a></p>
+        <div style="margin-bottom:1rem;">
+          <strong>Rating:</strong> ${a.rating}/10
+          <span class="badge ${badgeClass(a.status)}" style="margin-left:0.5rem;">${a.status}</span>
+        </div>
+        <p style="margin-bottom:1rem;">${esc(a.explanation)}</p>
+        <label>Notes</label>
+        <textarea id="modalNotes" placeholder="Add notes...">${esc(a.notes || '')}</textarea>
+        <button class="btn-sm" style="margin-top:0.5rem;" onclick="saveNotes(${a.id})">Save Notes</button>
+        <hr style="margin:1rem 0;">
+        <h2 style="font-size:1rem; margin-bottom:0.5rem;">Tailored Resume</h2>
+        <div class="resume-output">${esc(a.tailored_resume)}</div>
+        <div class="actions">
+          <button onclick="navigator.clipboard.writeText(${JSON.stringify(a.tailored_resume)}).then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy to Clipboard',2000)})">Copy to Clipboard</button>
+          <button class="btn-secondary" onclick="closeModal()">Close</button>
+        </div>
+      `;
+      document.getElementById('detailModal').classList.remove('hidden');
+    }
+
+    async function saveNotes(id) {
+      const notes = document.getElementById('modalNotes').value;
+      await fetch(`/api/applications/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: undefined, notes })
+      });
+      // Need to send current status too
+      const resp = await fetch(`/api/applications/${id}`);
+      const a = await resp.json();
+      await fetch(`/api/applications/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: a.status, notes })
+      });
+    }
+
+    function closeModal() {
+      document.getElementById('detailModal').classList.add('hidden');
+      loadDashboard();
+    }
   </script>
 </body>
 </html>

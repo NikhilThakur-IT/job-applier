@@ -23,6 +23,7 @@ A personal tool that tailors your resume to job postings using only your real ex
 - **Resume parsing**: python-docx (Word), PyPDF2 (PDF)
 - **Job scraping**: BeautifulSoup + requests
 - **AI**: Anthropic Claude API for rating and tailoring
+- **Database**: SQLite (local file `applications.db`)
 - **Output**: Word document (.docx) + copyable plain text
 
 ## Setup
@@ -44,4 +45,5 @@ requirements.txt     — Python dependencies
   resume_parser.py   — Parse PDF/Word uploads
   job_scraper.py     — Scrape job posting from URL
   analyser.py        — Rate compatibility + tailor resume
+  database.py        — SQLite persistence for application tracking
 ```
